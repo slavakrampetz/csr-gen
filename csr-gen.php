@@ -1,16 +1,5 @@
 <?php declare(strict_types=1);
 
-/*
-http://blog.endpoint.com/2014/10/openssl-csr-with-alternative-names-one.html
-Common Name: www.eventoozi.com
-Organization: eventoozi, LLC
-Organization Unit: Web Department
-Locality: Goldenâs Bridge
-State: NY
-Country: US
-Email: holly@eventoozi.com
-*/
-
 const REGEX_DOMAIN = '/^[a-zA-Z0-9\p{L}][a-zA-Z0-9\p{L}-\.]{1,61}[a-zA-Z0-9\p{L}]\.[a-zA-Z0-9\p{L}][a-zA-Z\p{L}-]*[a-zA-Z0-9\p{L}]+$/';
 const REGEX_EMAIL = '~^'. '[a-z\d_.+-]+' . '@' . '(?:[a-z\d][a-z\d-]*[a-z\d]\.|[a-z\d]\.)+[a-z]{2,6}' . '$~' . 'ixu';
 const REGEX_COUNTRY = '/^[A-Z]{2}$/';
@@ -531,7 +520,7 @@ prompt=no
 default_md=sha256
 req_extensions=req_ext
 distinguished_name=dn
- 
+
 [dn]
 C=%COUNTRY%
 ST="%STATE%"
@@ -540,10 +529,10 @@ O="%ORG%"
 OU="%ORG-UNIT%"
 emailAddress=%EMAIL%
 CN=www.%DOMAIN%
- 
+
 [req_ext]
 subjectAltName=@alt_names
- 
+
 [alt_names]
 DNS.1=%DOMAIN%
 DNS.2=www.%DOMAIN%
