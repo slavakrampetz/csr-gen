@@ -1,5 +1,16 @@
 <?php declare(strict_types=1);
 
+/*
+http://blog.endpoint.com/2014/10/openssl-csr-with-alternative-names-one.html
+Common Name: www.eventoozi.com
+Organization: eventoozi, LLC
+Organization Unit: Web Department
+Locality: Goldenâs Bridge
+State: NY
+Country: US
+Email: holly@eventoozi.com
+*/
+
 const REGEX_DOMAIN = '/^[a-zA-Z0-9\p{L}][a-zA-Z0-9\p{L}-\.]{1,61}[a-zA-Z0-9\p{L}]\.[a-zA-Z0-9\p{L}][a-zA-Z\p{L}-]*[a-zA-Z0-9\p{L}]+$/';
 const REGEX_EMAIL = '~^'. '[a-z\d_.+-]+' . '@' . '(?:[a-z\d][a-z\d-]*[a-z\d]\.|[a-z\d]\.)+[a-z]{2,6}' . '$~' . 'ixu';
 const REGEX_COUNTRY = '/^[A-Z]{2}$/';
@@ -119,6 +130,10 @@ if(count($_GET) > 0) {
 				<input name="d" value="<?php e($DATA['d']); ?>" type="text" required>
 			</label>
 			<label>
+				<span>Alt names:</span>
+				<input name="a" value="<?php e($DATA['a']); ?>" type="text">
+			</label>
+			<label>
 				<span>E-mail:</span>
 				<input name="e" value="<?php e($DATA['e']); ?>" type="email" required>
 			</label>
@@ -174,13 +189,12 @@ $(function(){
 	// Validate fields
 	var do_validate = function($e) {
 		var v = $e.val();
-		if(v.trim() === '') {
+		if(v.trim() === '' && $e.attr('required')) {
 			$e.addClass('error');
 			return false;
-		} else {
-			$e.removeClass('error');
-			return true;
 		}
+		$e.removeClass('error');
+		return true;
 	}
 	$('#in').find('input')
 		.on('change keyup blur focus', function() { do_validate($(this)) });
@@ -201,12 +215,6 @@ $(function(){
 				if(!do_validate($e)) {
 					nof++;
 				}
-				if(v.trim() === '') {
-					nof++;
-					$e.addClass('error');
-				} else {
-					$e.removeClass('error');
-				}
 				data[k] = v;
 			});
 
@@ -216,10 +224,12 @@ $(function(){
 			}
 
 			$.post(url, data, function(res) {
+console.log('Done?', res);
 				var $els = $('#in').find('input');
 				if(res.e) { // errors?
+console.log('Error??', res.e);
 					$els.each( function(idx, e) {
-						console.log(idx, e);
+						// console.log(idx, e);
 						var $e = $(e);
 						var k = $e.attr('name');
 						var err = res.e[k];
@@ -231,10 +241,11 @@ $(function(){
 						}
 					});
 				} else {
+console.log('New CSR!');
 					$('#csr').html(res.csr);
 				}
 			});
-//			console.log(url, data);
+			// console.log(url, data);
 		});
 
 	// bind Clipboard
@@ -254,7 +265,7 @@ $(function(){
 		return $tml;
 	}
 
-// Read whole file
+	// Read whole file
 	function file_rd(string $fnm): string {
 		$h = fopen($fnm, 'rb');
 		$size = filesize($fnm);
@@ -269,9 +280,7 @@ $(function(){
 		fclose($h);
 	}
 
-	function e($m) {
-		echo $m;
-	}
+	function e($m) { echo $m; }
 
 	function debug($x) {
 		/** @var array $what */
@@ -300,9 +309,7 @@ $(function(){
 		return false;
 	}
 
-	function req_is_new(): bool {
-		return !array_key_exists('data', $_SESSION);
-	}
+	function req_is_new(): bool { return !array_key_exists('data', $_SESSION); }
 
 	function exit_json(array $data) {
 		header('Content-Type: application/json');
@@ -337,6 +344,7 @@ $(function(){
 		// Default data
 		$DATA = [
 			'd' => '',
+			'a' => '',
 			'e' => '',
 			'c' => '',
 			's' => '',
@@ -450,6 +458,12 @@ $(function(){
 		$KEY = $_SESSION['key'];
 
 		$fnm = 'x';
+		if(empty($DATA['d'])) {
+			$fnm = 'unknown';
+		} else {
+			$fnm = $DATA['d'];
+		}
+
 		$text = '';
 		switch ($what) {
 			case 'key':
@@ -457,7 +471,7 @@ $(function(){
 					exit_error(400);
 					exit;
 				}
-				$fnm = empty($DATA['d']) ? 'unknown.private.key' : $DATA['d'] . '.private.key';
+				$fnm = $fnm . '.private.key';
 				$text = $KEY;
 				break;
 			case 'csr':
@@ -465,9 +479,12 @@ $(function(){
 					exit_error(400);
 					exit;
 				}
-				$fnm = empty($DATA['d']) ? 'unknown.csr' : $DATA['d'] . '.csr';
+				$fnm = $fnm . '.csr';
 				$text = $CSR;
 				break;
+			default:
+				exit_error(400);
+				exit;
 		}
 
 		header('Content-Type: application/octet-stream');
@@ -485,24 +502,47 @@ $(function(){
 
 		// Read from post
 		if (strtolower($_SERVER['REQUEST_METHOD']) === 'post') {
-			$changed = false;
+
 			foreach ($DATA as $k => $v) {
 				if (array_key_exists($k, $_POST)) {
 					$DATA[$k] = $_POST[$k];
-					$changed = true;
 				}
 			}
 
 			// Special
 			$domain = strtolower($DATA['d']);
 			if(stripos($domain, 'www.') === 0) {
-				$DATA['d'] = substr($DATA['d'],4);
-				$changed = true;
+				$DATA['d'] = $domain = substr($domain,4);
+			}
+			if($DATA['d'] !== $domain) {
+				$DATA['d'] = $domain;
 			}
 
-			if($changed) {
-				$_SESSION['data'] = $DATA;
+			if(empty($DATA['a'])) {
+				$DATA['a'] = 'www.' . $domain;
+				$DATA['domains'] = [ $domain, $DATA['a'] ];
+			} else {
+				$alt = explode(' ', strtolower($DATA['a']));
+				$corrected = [];
+				$domain_wild = '*.' . $domain;
+				$domains = [ $domain, 'www.' . $domain ];
+				for($i = 0; $i < count($alt); $i++ ) {
+					$d = $alt[$i];
+					if(empty($d)) { continue; }
+					if(in_array($d, $domains)) { continue; } // already here
+					if($d === $domain_wild) {
+						$corrected = [ $domain_wild ];
+						$domains = [ $domain, $domain_wild ];
+						break;
+					}
+					$domains[] = $d;
+					$corrected[] = $d;
+				}
+				$DATA['a'] = implode(' ', $corrected);
+				$DATA['domains'] = $domains;
 			}
+
+			$_SESSION['data'] = $DATA;
 		}
 
 		$res = data_validate();
@@ -511,7 +551,8 @@ $(function(){
 			return;
 		}
 
-//var_export($DATA);
+		// var_export($DATA);
+
 		//region Prepare settings
 		$template = <<<TML
 [req]
@@ -528,14 +569,13 @@ L="%LOCALITY%"
 O="%ORG%"
 OU="%ORG-UNIT%"
 emailAddress=%EMAIL%
-CN=www.%DOMAIN%
+CN=%DOMAIN%
 
 [req_ext]
 subjectAltName=@alt_names
 
 [alt_names]
-DNS.1=%DOMAIN%
-DNS.2=www.%DOMAIN%
+%DOMAINS%
 TML;
 		$vars = [
 			'COUNTRY' => $DATA['c'],
@@ -544,10 +584,20 @@ TML;
 			'ORG' => $DATA['o'],
 			'ORG-UNIT' => $DATA['ou'],
 			'EMAIL' => $DATA['e'],
-			'DOMAIN' => $DATA['d']
+			'DOMAIN' => $DATA['d'],
+			'DOMAINS' => 'DNS.1=' . $DATA['d']
 		];
+
+		$domains = $DATA['domains'];
+		$dstr = '';
+		for($i = 0; $i < count($domains); $i++) {
+			$dstr .= 'DNS.' . ($i + 1) . '=' . $domains[$i] . PHP_EOL;
+		}
+		$vars['DOMAINS'] = $dstr;
+
 		$text = tml_process($template, $vars);
-//var_export($text);
+// var_export($text);
+
 		$tmp_etc = tempnam('/tmp/', 'e1');
 		file_wr($tmp_etc, $text);
 		//endregion
