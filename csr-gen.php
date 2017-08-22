@@ -1,17 +1,16 @@
 <?php declare(strict_types=1);
-
 /*
 http://blog.endpoint.com/2014/10/openssl-csr-with-alternative-names-one.html
 Common Name: www.eventoozi.com
 Organization: eventoozi, LLC
 Organization Unit: Web Department
-Locality: Goldenâs Bridge
+Locality: Golden's Bridge
 State: NY
 Country: US
 Email: holly@eventoozi.com
 */
 
-const REGEX_DOMAIN = '/^[a-zA-Z0-9\p{L}][a-zA-Z0-9\p{L}-\.]{1,61}[a-zA-Z0-9\p{L}]\.[a-zA-Z0-9\p{L}][a-zA-Z\p{L}-]*[a-zA-Z0-9\p{L}]+$/';
+const REGEX_DOMAIN = '/^(\*\.)?[a-zA-Z0-9\p{L}][a-zA-Z0-9\p{L}-\.]{1,61}[a-zA-Z0-9\p{L}]\.[a-zA-Z0-9\p{L}][a-zA-Z\p{L}-]*[a-zA-Z0-9\p{L}]+$/';
 const REGEX_EMAIL = '~^'. '[a-z\d_.+-]+' . '@' . '(?:[a-z\d][a-z\d-]*[a-z\d]\.|[a-z\d]\.)+[a-z]{2,6}' . '$~' . 'ixu';
 const REGEX_COUNTRY = '/^[A-Z]{2}$/';
 
@@ -39,7 +38,6 @@ if(count($_GET) > 0) {
 			do_new_key();
 			break;
 		default:
-
 			// Download?
 			if(array_key_exists('d', $_GET)) {
 				do_download($_GET['d']);
@@ -49,10 +47,9 @@ if(count($_GET) > 0) {
 	}
 	exit();
 // Show form
-} else {
-	do_init();
 }
 
+do_init();
 
 ?><!doctype html>
 <html lang="en">
@@ -127,11 +124,11 @@ if(count($_GET) > 0) {
 			<h2>Input data</h2>
 			<label>
 				<span>Domain:</span>
-				<input name="d" value="<?php e($DATA['d']); ?>" type="text" required>
+				<input name="d" value="<?php e($DATA['d']); ?>" required>
 			</label>
 			<label>
 				<span>Alt names:</span>
-				<input name="a" value="<?php e($DATA['a']); ?>" type="text">
+				<input name="a" value="<?php e($DATA['a']); ?>">
 			</label>
 			<label>
 				<span>E-mail:</span>
@@ -139,23 +136,23 @@ if(count($_GET) > 0) {
 			</label>
 			<label>
 				<span>Country:</span>
-				<input name="c" value="<?php e($DATA['c']); ?>" type="text" required>
+				<input name="c" value="<?php e($DATA['c']); ?>" required>
 			</label>
 			<label>
 				<span>State:</span>
-				<input name="s" value="<?php e($DATA['s']); ?>" type="text" required>
+				<input name="s" value="<?php e($DATA['s']); ?>" required>
 			</label>
 			<label>
 				<span>Locality:</span>
-				<input name="l" value="<?php e($DATA['l']); ?>" type="text" required>
+				<input name="l" value="<?php e($DATA['l']); ?>" required>
 			</label>
 			<label>
 				<span>Org:</span>
-				<input name="o" value="<?php e($DATA['o']); ?>" type="text" required>
+				<input name="o" value="<?php e($DATA['o']); ?>" required>
 			</label>
 			<label>
 				<span>Org Unit:</span>
-				<input name="ou" value="<?php e($DATA['ou']); ?>" type="text" required>
+				<input name="ou" value="<?php e($DATA['ou']); ?>" required>
 			</label>
 			<div class="buttons">
 				<a href="?x=csr" id="go">Generate =></a>
@@ -169,7 +166,7 @@ if(count($_GET) > 0) {
 			<pre id="csr"><?php e($CSR); ?></pre>
 		</div>
 	</div>
-<script>
+	<script>
 $(function(){
 
 	// bind renew Key
@@ -224,10 +221,10 @@ $(function(){
 			}
 
 			$.post(url, data, function(res) {
-console.log('Done?', res);
+				console.log('Done?', res);
 				var $els = $('#in').find('input');
 				if(res.e) { // errors?
-console.log('Error??', res.e);
+					console.log('Error', res.e);
 					$els.each( function(idx, e) {
 						// console.log(idx, e);
 						var $e = $(e);
@@ -241,7 +238,7 @@ console.log('Error??', res.e);
 						}
 					});
 				} else {
-console.log('New CSR!');
+					console.log('Success!');
 					$('#csr').html(res.csr);
 				}
 			});
@@ -317,7 +314,7 @@ console.log('New CSR!');
 		exit;
 	}
 
-	function exit_error($code = 400) {
+	function exit_error($code) {
 		switch ($code) {
 			case 400:
 				header('HTTP/1.1 400 Bad Request, dear');
@@ -457,21 +454,19 @@ console.log('New CSR!');
 
 		$KEY = $_SESSION['key'];
 
-		$fnm = 'x';
 		if(empty($DATA['d'])) {
 			$fnm = 'unknown';
 		} else {
 			$fnm = $DATA['d'];
 		}
 
-		$text = '';
 		switch ($what) {
 			case 'key':
 				if (empty($KEY)) {
 					exit_error(400);
 					exit;
 				}
-				$fnm = $fnm . '.private.key';
+				$fnm .= '.private.key';
 				$text = $KEY;
 				break;
 			case 'csr':
@@ -479,7 +474,7 @@ console.log('New CSR!');
 					exit_error(400);
 					exit;
 				}
-				$fnm = $fnm . '.csr';
+				$fnm .= '.csr';
 				$text = $CSR;
 				break;
 			default:
@@ -494,6 +489,9 @@ console.log('New CSR!');
 		exit;
 	} // do_download
 
+	/**
+	 *
+	 */
 	function do_csr() {
 		global $DATA, $KEY;
 
@@ -509,35 +507,23 @@ console.log('New CSR!');
 				}
 			}
 
-			// Special
 			$domain = strtolower($DATA['d']);
-			if(stripos($domain, 'www.') === 0) {
-				$DATA['d'] = $domain = substr($domain,4);
-			}
+			$domains = [$domain];
 			if($DATA['d'] !== $domain) {
 				$DATA['d'] = $domain;
 			}
 
-			if(empty($DATA['a'])) {
-				$DATA['a'] = 'www.' . $domain;
-				$DATA['domains'] = [ $domain, $DATA['a'] ];
-			} else {
+			if (!empty($DATA['a'])) {
 				$alt = explode(' ', strtolower($DATA['a']));
+
 				$corrected = [];
-				$domain_wild = '*.' . $domain;
-				$domains = [ $domain, 'www.' . $domain ];
-				for($i = 0; $i < count($alt); $i++ ) {
-					$d = $alt[$i];
-					if(empty($d)) { continue; }
-					if(in_array($d, $domains)) { continue; } // already here
-					if($d === $domain_wild) {
-						$corrected = [ $domain_wild ];
-						$domains = [ $domain, $domain_wild ];
-						break;
-					}
-					$domains[] = $d;
+				foreach ($alt as $d) {
+					if (empty($d)) { continue; } // empty
+					if (in_array($d, $domains, true)) { continue; } // already here
 					$corrected[] = $d;
+					$domains[] = $d;
 				}
+
 				$DATA['a'] = implode(' ', $corrected);
 				$DATA['domains'] = $domains;
 			}
@@ -550,10 +536,11 @@ console.log('New CSR!');
 			exit_json(['e' => $res]);
 			return;
 		}
-
 		// var_export($DATA);
 
 		//region Prepare settings
+		$domains = $DATA['domains'];
+
 		$template = <<<TML
 [req]
 default_bits=2048
@@ -572,11 +559,18 @@ emailAddress=%EMAIL%
 CN=%DOMAIN%
 
 [req_ext]
+TML;
+
+		// Register extra data for more than one domains
+		if (count($domains) > 1) {
+			$template .= <<<TML
 subjectAltName=@alt_names
 
 [alt_names]
 %DOMAINS%
 TML;
+		}
+
 		$vars = [
 			'COUNTRY' => $DATA['c'],
 			'STATE' => $DATA['s'],
@@ -588,18 +582,18 @@ TML;
 			'DOMAINS' => 'DNS.1=' . $DATA['d']
 		];
 
-		$domains = $DATA['domains'];
-		$dstr = '';
-		for($i = 0; $i < count($domains); $i++) {
-			$dstr .= 'DNS.' . ($i + 1) . '=' . $domains[$i] . PHP_EOL;
+		$domains_str = '';
+		$i = 1;
+		foreach( $domains as $d) {
+			$domains_str .= 'DNS.' . $i . '=' . $d . PHP_EOL;
+			$i++;
 		}
-		$vars['DOMAINS'] = $dstr;
+		$vars['DOMAINS'] = $domains_str;
 
-		$text = tml_process($template, $vars);
-// var_export($text);
+		$request_text = tml_process($template, $vars);
 
 		$tmp_etc = tempnam('/tmp/', 'e1');
-		file_wr($tmp_etc, $text);
+		file_wr($tmp_etc, $request_text);
 		//endregion
 
 		// Store key to file
@@ -613,29 +607,47 @@ TML;
 		$cmd = 'openssl req -new -sha256 -nodes -out ' . $tmp_csr . ' -key ' . $tmp_key . ' -config ' . $tmp_etc . ' 2>&1';
 		exec($cmd, $out, $res);
 		if ($res !== 0) {
-			exit_json(['e' =>
-					[
-						'exec' => 'Error generating CSR (' . $res . '): ' . implode(PHP_EOL, $out),
-						'cmd' => $cmd
-					]
+			exit_json([
+				'e' => [
+					'exec' => 'Error generating CSR (' . $res . '): ' . implode(PHP_EOL, $out),
+					'cmd' => $cmd,
+					'data' => $DATA,
+					'req_text' => $request_text,
 				]
-			);
+			]);
+			@unlink($tmp_csr);
+			@unlink($tmp_key);
+			@unlink($tmp_etc);
 			return;
 		}
 
 		// Read CSR
-		$CSR = file_rd($tmp_csr);
-		if (false === $CSR) {
-			exit_json(['e' => ['exec' => 'Error reading CSR file ' . $tmp_csr]]);
+		$csr = file_rd($tmp_csr);
+		if (false === $csr) {
+			exit_json([
+				'e' => [
+					'exec' => 'Error reading CSR file ' . $tmp_csr,
+					'data' => $DATA,
+					'req_text' => $request_text,
+				]
+			]);
+			@unlink($tmp_csr);
+			@unlink($tmp_key);
+			@unlink($tmp_etc);
 			return;
 		}
-		$_SESSION['csr'] = $CSR;
+		$_SESSION['csr'] = $csr;
 
-		unlink($tmp_csr);
-		unlink($tmp_key);
-		unlink($tmp_etc);
+		@unlink($tmp_csr);
+		@unlink($tmp_key);
+		@unlink($tmp_etc);
 
-		exit_json(['csr' => $CSR]);
+		exit_json([
+			'csr' => $csr,
+			'data' => $DATA,
+			'cmd' => $cmd,
+			'req_text' => $request_text,
+		]);
 	}
 
 }
