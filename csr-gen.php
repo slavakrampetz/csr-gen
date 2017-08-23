@@ -79,7 +79,7 @@ do_init();
 		margin: 5px 5px 5px 0;
 	}
 	#in label span {
-		width: 70px;
+		width: 100px;
 	}
 
 	#in input:focus {
@@ -108,6 +108,10 @@ do_init();
 		color: #fff;
 		text-decoration:none;
 	}
+
+	#test, #exec {
+		display: none;
+	}
 </style>
 	<!--suppress JSUnresolvedLibraryURL -->
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
@@ -121,41 +125,67 @@ do_init();
 
 	<div id="wa">
 		<div id="in">
-			<h2>Input data</h2>
-			<label>
-				<span>Domain:</span>
-				<input name="d" value="<?php e($DATA['d']); ?>" required>
-			</label>
-			<label>
-				<span>Alt names:</span>
-				<input name="a" value="<?php e($DATA['a']); ?>">
-			</label>
-			<label>
-				<span>E-mail:</span>
-				<input name="e" value="<?php e($DATA['e']); ?>" type="email" required>
-			</label>
-			<label>
-				<span>Country:</span>
-				<input name="c" value="<?php e($DATA['c']); ?>" required>
-			</label>
-			<label>
-				<span>State:</span>
-				<input name="s" value="<?php e($DATA['s']); ?>" required>
-			</label>
-			<label>
-				<span>Locality:</span>
-				<input name="l" value="<?php e($DATA['l']); ?>" required>
-			</label>
-			<label>
-				<span>Org:</span>
-				<input name="o" value="<?php e($DATA['o']); ?>" required>
-			</label>
-			<label>
-				<span>Org Unit:</span>
-				<input name="ou" value="<?php e($DATA['ou']); ?>" required>
-			</label>
-			<div class="buttons">
-				<a href="?x=csr" id="go">Generate =></a>
+
+			<div id="form">
+				<h2>Input data</h2>
+				<label>
+					<span>Domain:</span>
+					<input name="d" value="<?php e($DATA['d']); ?>" required>
+				</label>
+				<label>
+					<span>Alt names:</span>
+					<input name="a" value="<?php e($DATA['a']); ?>">
+				</label>
+				<label>
+					<span>E-mail:</span>
+					<input name="e" value="<?php e($DATA['e']); ?>" type="email" required>
+				</label>
+				<label>
+					<span>Country:</span>
+					<input name="c" value="<?php e($DATA['c']); ?>" required>
+				</label>
+				<label>
+					<span>State:</span>
+					<input name="s" value="<?php e($DATA['s']); ?>" required>
+				</label>
+				<label>
+					<span>Locality:</span>
+					<input name="l" value="<?php e($DATA['l']); ?>" required>
+				</label>
+				<label>
+					<span>Org:</span>
+					<input name="o" value="<?php e($DATA['o']); ?>" required>
+				</label>
+				<label>
+					<span>Org Unit:</span>
+					<input name="ou" value="<?php e($DATA['ou']); ?>" required>
+				</label>
+				<div class="buttons">
+					<a href="?x=csr" id="go">Generate =></a>
+				</div>
+			</div>
+
+			<div id="test">
+				<h2>Test data</h2>
+				<div id="subj">
+<!--					<label>-->
+<!--						<span>Domain:</span>-->
+<!--						<span id="test-dns">DOMAIN</span>-->
+<!--					</label>-->
+				</div>
+				<div id="alt">
+					<!--					<label>-->
+					<!--						<span>Domain:</span>-->
+					<!--						<span id="test-dns">DOMAIN</span>-->
+					<!--					</label>-->
+				</div>
+			</div>
+			<div id="exec">
+				<h2>Execution:</h2>
+				<div id="cfg-wrap">
+					<h3>Config</h3>
+					<pre id="cfg"></pre>
+				</div>
 			</div>
 		</div>
 
@@ -196,7 +226,7 @@ $(function(){
 	$('#in').find('input')
 		.on('change keyup blur focus', function() { do_validate($(this)) });
 
-	// bind renew Key
+	// bind GO Key
 	$('#go')
 		.on('click', function(e) {
 			e.preventDefault();
@@ -224,7 +254,8 @@ $(function(){
 				console.log('Done?', res);
 				var $els = $('#in').find('input');
 				if(res.e) { // errors?
-					console.log('Error', res.e);
+					console.error(res.e);
+					console.log(res);
 					$els.each( function(idx, e) {
 						// console.log(idx, e);
 						var $e = $(e);
@@ -240,6 +271,49 @@ $(function(){
 				} else {
 					console.log('Success!');
 					$('#csr').html(res.csr);
+
+					// Check test results exists
+					var $test = $('#test');
+					var $subj = $('#subj');
+					var $alt = $('#alt');
+
+
+					var add_fld = function($el, lbl, txt) {
+						var html = $el.html() +
+							'<label>' +
+								'<span>' + lbl + '</span>' +
+								'<span>' + txt + '</span>' +
+							'</label>';
+						$el.html(html);
+					};
+
+					$subj.html('');
+					if (res.test_cn) {
+						$subj.html('<h3>Subject</h3>');
+						for (var prop in res.test_cn) {
+							if (res.test_cn.hasOwnProperty(prop)) {
+								add_fld($subj, prop, res.test_cn[prop])
+							}
+						}
+					} else {
+						$subj.html('<h3>Subject</h3><p>NOT FOUND</p>');
+					}
+
+					if (res.test_alt) {
+						$alt.html('<h3>Alternate names</h3>');
+						for(var i = 0; i < res.test_alt.length; i++) {
+							add_fld($alt, 'DNS' + (i+1), res.test_alt[i])
+						}
+					} else {
+						$alt.html('<h3>Alternate names</h3><p>NOT FOUND</p>');
+					}
+					$test.show();
+
+					// Show execution
+					$('#exec').show();
+					if (res.req_config) {
+						$('#cfg').html(res.req_config);
+					}
 				}
 			});
 			// console.log(url, data);
@@ -564,6 +638,7 @@ TML;
 		// Register extra data for more than one domains
 		if (count($domains) > 1) {
 			$template .= <<<TML
+
 subjectAltName=@alt_names
 
 [alt_names]
@@ -596,6 +671,14 @@ TML;
 		file_wr($tmp_etc, $request_text);
 		//endregion
 
+		// JSON
+		$json = [
+			'data' => $DATA,
+			'req_config' => $request_text,
+		];
+
+		$is_err = false;
+
 		// Store key to file
 		$tmp_key = tempnam('/tmp/', 'key');
 		file_wr($tmp_key, $KEY);
@@ -605,49 +688,71 @@ TML;
 
 		// Run CSR generation
 		$cmd = 'openssl req -new -sha256 -nodes -out ' . $tmp_csr . ' -key ' . $tmp_key . ' -config ' . $tmp_etc . ' 2>&1';
+		$json['req_cmd'] = $cmd;
 		exec($cmd, $out, $res);
 		if ($res !== 0) {
-			exit_json([
-				'e' => [
-					'exec' => 'Error generating CSR (' . $res . '): ' . implode(PHP_EOL, $out),
-					'cmd' => $cmd,
-					'data' => $DATA,
-					'req_text' => $request_text,
-				]
-			]);
+			$is_err = true;
+			$json['e'] = [ 'exec' => 'Error generating CSR (' . $res . '): ' . implode(PHP_EOL, $out) ];
 			@unlink($tmp_csr);
 			@unlink($tmp_key);
 			@unlink($tmp_etc);
+			exit_json($json);
 			return;
 		}
 
 		// Read CSR
-		$csr = file_rd($tmp_csr);
-		if (false === $csr) {
-			exit_json([
-				'e' => [
-					'exec' => 'Error reading CSR file ' . $tmp_csr,
-					'data' => $DATA,
-					'req_text' => $request_text,
-				]
-			]);
-			@unlink($tmp_csr);
-			@unlink($tmp_key);
-			@unlink($tmp_etc);
-			return;
+		if (!$is_err) {
+			$csr = file_rd($tmp_csr);
+			if (false === $csr) {
+				$is_err = true;
+				$json['e'] = ['exec' => 'Error reading CSR file ' . $tmp_csr];
+			} else {
+				$_SESSION['csr'] = $json['csr'] = $csr;
+			}
 		}
-		$_SESSION['csr'] = $csr;
 
+		// Test CSR
+		if (!$is_err) {
+			$cmd_test = 'openssl req -in ' . $tmp_csr . ' -noout -text 2>&1';
+			exec($cmd_test, $test, $res);
+			$json['test_cmd'] = $cmd_test;
+			$test_str = implode(PHP_EOL, $test);
+			$json['test_out'] = $test;
+			$json['test_res'] = $res;
+			if (0 === $res) {
+				// try to match result
+				if(1 !== preg_match('/Subject:\s*(?<subj>.*)\n/', $test_str, $ma)) {
+					$json['test_dns'] = 'NOT FOUND';
+				} else {
+					$subj = $ma['subj'];
+					$flds = preg_split('/[,\/]\s*/', $subj);
+					$parsed = [];
+					foreach($flds as $fld) {
+						$pair = explode('=', $fld);
+						$parsed[$pair[0]] = $pair[1];
+					}
+					$json['test_cn'] = $parsed;
+
+
+					if (count($domains) > 1) {
+						if(!preg_match_all('/(?:DNS:(?<alt>[^\s,]+))/', $test_str, $ma)) {
+							$json['test_alt'] = 'NOT FOUND';
+						} else {
+							$json['test_alt'] = $ma['alt'];
+						}
+					}
+				}
+
+				// (?<alt>DNS:[^\n]+)\n
+			}
+		}
+
+		// Delete old files
 		@unlink($tmp_csr);
 		@unlink($tmp_key);
 		@unlink($tmp_etc);
 
-		exit_json([
-			'csr' => $csr,
-			'data' => $DATA,
-			'cmd' => $cmd,
-			'req_text' => $request_text,
-		]);
+		exit_json($json);
 	}
 
 }
