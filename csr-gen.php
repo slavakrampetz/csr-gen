@@ -122,6 +122,7 @@ do_init();
 <body>
 
 	<h1>CSR generator</h1>
+	<p>Test CSR here: <a href="https://www.sslshopper.com/csr-decoder.html">https://www.sslshopper.com/csr-decoder.html</a></p>
 
 	<div id="wa">
 		<div id="in">
