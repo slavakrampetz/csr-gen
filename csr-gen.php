@@ -10,7 +10,7 @@ Country: US
 Email: holly@eventoozi.com
 */
 
-const REGEX_DOMAIN = '/^(\*\.)?[a-zA-Z0-9\p{L}][a-zA-Z0-9\p{L}-\.]{1,61}[a-zA-Z0-9\p{L}]\.[a-zA-Z0-9\p{L}][a-zA-Z\p{L}-]*[a-zA-Z0-9\p{L}]+$/';
+const REGEX_DOMAIN = '/^(\*\.)?[a-zA-Z0-9\p{L}][a-zA-Z0-9\p{L}\-\.]{1,61}[a-zA-Z0-9\p{L}]\.[a-zA-Z0-9\p{L}][a-zA-Z\p{L}\-]*[a-zA-Z0-9\p{L}]+$/';
 const REGEX_EMAIL = '~^'. '[a-z\d_.+-]+' . '@' . '(?:[a-z\d][a-z\d-]*[a-z\d]\.|[a-z\d]\.)+[a-z]{2,6}' . '$~' . 'ixu';
 const REGEX_COUNTRY = '/^[A-Z]{2}$/';
 
@@ -29,7 +29,7 @@ if(count($_GET) > 0) {
 		exit;
 	}
 
-	$cmd = $_GET['x'];
+	$cmd = ar_get($_GET, 'x', 'download');
 	switch($cmd) {
 		case 'csr':
 			do_csr();
@@ -197,6 +197,7 @@ do_init();
 			<pre id="csr"><?php e($CSR); ?></pre>
 		</div>
 	</div>
+	<!--suppress JSUnresolvedFunction, ES6ConvertVarToLetConst, JSUnresolvedVariable -->
 	<script>
 $(function(){
 
@@ -322,7 +323,6 @@ $(function(){
 
 	// bind Clipboard
 	new Clipboard('#csr-copy');
-
 });
 </script>
 </body>
@@ -355,16 +355,13 @@ $(function(){
 	function e($m) { echo $m; }
 
 	function debug($x) {
-		/** @var array $what */
 		$what = func_get_args();
 		echo '<pre>';
 		foreach ($what as $v) {
 			if (is_string($v) || is_numeric($v)) {
 				echo $v . PHP_EOL;
 			} else {
-				/** @noinspection ForgottenDebugOutputInspection */
 				var_dump($v);
-				/** @noinspection DisconnectedForeachInstructionInspection */
 				echo PHP_EOL;
 			}
 		}
@@ -385,6 +382,7 @@ $(function(){
 
 	function exit_json(array $data) {
 		header('Content-Type: application/json');
+		/** @noinspection JsonEncodingApiUsageInspection */
 		echo json_encode($data);
 		exit;
 	}
@@ -692,7 +690,6 @@ TML;
 		$json['req_cmd'] = $cmd;
 		exec($cmd, $out, $res);
 		if ($res !== 0) {
-			$is_err = true;
 			$json['e'] = [ 'exec' => 'Error generating CSR (' . $res . '): ' . implode(PHP_EOL, $out) ];
 			@unlink($tmp_csr);
 			@unlink($tmp_key);
@@ -756,4 +753,10 @@ TML;
 		exit_json($json);
 	}
 
+	function ar_get(array $ar, string $key, $def) {
+		if (!array_key_exists($key, $ar)) {
+			return $def;
+		}
+		return $ar[$key];
+	}
 }
